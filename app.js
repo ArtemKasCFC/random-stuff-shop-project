@@ -11,7 +11,6 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 app.use((req, res, next) => {
-  console.log(req.body);
   req.requestTime = new Date().toISOString();
   console.log(req.requestTime);
   next();
