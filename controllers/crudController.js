@@ -1,5 +1,6 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const ApiFeatures = require('../utils/apiFeatures');
 
 exports.createOne = Model =>
   catchAsync(async (req, res, next) => {
@@ -27,12 +28,14 @@ exports.getOne = (Model, populateOptions) =>
 
 exports.getAll = Model =>
   catchAsync(async (req, res, next) => {
-    const doc = await Model.find();
+    const features = new ApiFeatures(Model.find(req.params.id), req.query).filter().sort().selectFields().paginate();
+    const doc = await features.query;
 
     if (!doc) return new AppError('There is no document', 404);
 
     res.status(200).json({
       status: 'success',
+      results: doc.length,
       data: doc,
     });
   });
