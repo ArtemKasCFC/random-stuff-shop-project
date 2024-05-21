@@ -1,20 +1,52 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const passwordValidator = require('password-validator');
 const bcrypt = require('bcryptjs');
+const schema = new passwordValidator();
+schema
+  .is()
+  .min(8, 'Password must have at least 8 characters')
+  .is()
+  .max(20, 'Password length must not exceed 20 characters')
+  .has()
+  .lowercase(1, 'Password must have at least 1 lowercase letter')
+  .has()
+  .uppercase(1, 'Password must have at least 1 uppercase letter')
+  .has()
+  .digits(1, 'Password must have at least 1 digit')
+  .has()
+  .symbols(1, 'Password must have at least 1 special character')
+  .has()
+  .not()
+  .spaces(null, 'Password must not contain spaces')
+  .not(/[~'!()*"`]/, 'Password must not have the following characters ~\'!()*"`');
 
 const userSchema = mongoose.Schema({
   name: {
     type: String,
     requried: [true, 'Please type your name'],
-    minLength: [2, 'Name must have at least 2 characters '],
-    maxLength: [60, 'Name must not have more than 60 characters '],
+    minLength: [2, 'Name must have at least 2 characters'],
+    maxLength: [60, 'Name length must not exceed 60 characters'],
+    validate: {
+      validator: function () {
+        return /^[a-zA-Z]+$/.test(this.name);
+      },
+      message: 'Please type your name in English',
+    },
   },
   email: {
     type: String,
-    required: [true, 'Please provide your email'],
+    required: [true, 'Please type your email'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
+    minLength: [6, 'Email must have at least 6 characters'],
+    maxLength: [60, 'Email length must not exceed 60 characters'],
+    validate: {
+      validator: function () {
+        return validator.isEmail(this.email, { allow_utf8_local_part: false, ignore_max_length: false });
+      },
+      message: 'Please provide a valid email',
+    },
   },
   avatar: {
     type: String,
@@ -28,9 +60,13 @@ const userSchema = mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Please provide your password'],
-    min: [8, 'Password must have at least 8 characters'],
-    max: [20, 'Password must not have more than 20 characters'],
     select: false,
+    validate: {
+      validator: val => {
+        const errorsArray = schema.validate(val, { details: true, list: true });
+        if (errorsArray.length > 0) throw new Error(errorsArray.map(msg => msg.message).join(', '));
+      },
+    },
   },
   passwordConfirm: {
     type: String,
